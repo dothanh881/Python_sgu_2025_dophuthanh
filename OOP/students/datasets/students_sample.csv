@@ -1,0 +1,6 @@
+id,full_name,major,gpa,role,fee_per_credit,activity_fee,credits,research_fee,scholarship_rate,program_fee
+S001,Nguyen Van A,Computer Science,3.4,Undergraduate,550000,200000,18,,,
+S002,Tran Thi B,Data Science,3.7,Graduate,900000,,12,800000,0.2,
+S003,Le Quang C,International Business,3.0,Exchange,,,,,,6000000
+S004,Pham D,Nursing,2.8,Undergraduate,500000,150000,15,,,
+S005,Hoang E,Medicine,3.9,Graduate,1000000,,9,1000000,0.35,
