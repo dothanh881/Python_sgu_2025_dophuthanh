@@ -1,0 +1,6 @@
+﻿id,full_name,major,gpa,role,fee_per_credit,activity_fee,credits,research_fee,scholarship_rate
+S001,Nguyen Van A,Computer Science,3.4,Undergraduate,550000.0,200000.0,18,,
+S002,Tran Thi B,Data Science,3.7,Graduate,900000.0,,12,800000.0,0.2
+S004,Pham D,Nursing,2.8,Undergraduate,500000.0,150000.0,15,,
+S005,Hoang E,Medicine,3.9,Graduate,1000000.0,,9,1000000.0,0.35
+1222,Nguyễn Phú THành,ITF,0.0,Undergraduate,500000.0,200000.0,0,,

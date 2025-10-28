@@ -30,13 +30,31 @@ class UndergraduateStudent(Student):
     def credits(self) -> int:
         return self._credits
 
+    @credits.setter
+    def credits(self, value: int) -> None:
+        if int(value) < 0:
+            raise ValueError("Số tín chỉ không được âm")
+        self._credits = int(value)
+
     @property
     def fee_per_credit(self) -> float:
         return self._fee_per_credit
 
+    @fee_per_credit.setter
+    def fee_per_credit(self, value: float) -> None:
+        if float(value) < 0:
+            raise ValueError("Phí/tín chỉ không được âm")
+        self._fee_per_credit = float(value)
+
     @property
     def activity_fee(self) -> float:
         return self._activity_fee
+
+    @activity_fee.setter
+    def activity_fee(self, value: float) -> None:
+        if float(value) < 0:
+            raise ValueError("Phí hoạt động không được âm")
+        self._activity_fee = float(value)
 
     def enroll(self, more_credits: int) -> None:
         if more_credits < 0:

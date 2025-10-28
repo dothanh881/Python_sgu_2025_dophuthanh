@@ -6,7 +6,6 @@ from ..models import (
     Student,
     UndergraduateStudent,
     GraduateStudent,
-    ExchangeStudent,
 )
 from ..data.repository import StudentRepository
 
@@ -68,34 +67,10 @@ class StudentService:
         self._repo.add(s)
         return s
 
-    def register_exchange(
-        self,
-        student_id: str,
-        full_name: str,
-        major: str,
-        program_fee: float = 5_000_000.0,
-        gpa: float = 0.0,
-    ) -> ExchangeStudent:
-        s = ExchangeStudent(
-            student_id=student_id,
-            full_name=full_name,
-            major=major,
-            gpa=gpa,
-            program_fee=program_fee,
-        )
-        self._repo.add(s)
-        return s
+    # Loại ExchangeStudent đã được lược bỏ để đơn giản hoá.
 
     # Tác vụ nghiệp vụ chung
-    def enroll_credits(self, student_id: str, more_credits: int) -> None:
-        s = self._repo.get(student_id)
-        if s is None:
-            raise KeyError("Không tìm thấy sinh viên")
-        # chỉ áp dụng cho loại có credits
-        if hasattr(s, "enroll"):
-            getattr(s, "enroll")(more_credits)
-        else:
-            raise ValueError("Loại sinh viên này không quản lý tín chỉ")
+    # Lược bỏ chức năng ghi danh tín chỉ để đơn giản hoá.
 
     def update_gpa(self, student_id: str, new_gpa: float) -> None:
         s = self._repo.get(student_id)
@@ -109,8 +84,7 @@ class StudentService:
             raise KeyError("Không tìm thấy sinh viên")
         return s.calculate_tuition()
 
-    def compute_total_tuition(self) -> float:
-        return sum(s.calculate_tuition() for s in self._repo.list_all())
+    # Lược bỏ tổng học phí để đơn giản hoá.
 
     def list_all(self) -> List[Student]:
         return self._repo.list_all()
@@ -120,6 +94,52 @@ class StudentService:
 
     def remove(self, student_id: str) -> bool:
         return self._repo.remove(student_id)
+
+    def edit_student(
+        self,
+        student_id: str,
+        full_name: Optional[str] = None,
+        major: Optional[str] = None,
+        gpa: Optional[float] = None,
+        # Undergraduate
+        fee_per_credit: Optional[float] = None,
+        activity_fee: Optional[float] = None,
+        credits: Optional[int] = None,
+        # Graduate
+        research_fee: Optional[float] = None,
+        scholarship_rate: Optional[float] = None,
+    ) -> Student:
+        s = self._repo.get(student_id)
+        if s is None:
+            raise KeyError("Không tìm thấy sinh viên")
+
+        # chung
+        if full_name is not None:
+            s.full_name = str(full_name)
+        if major is not None:
+            s.major = str(major)
+        if gpa is not None:
+            s.update_gpa(float(gpa))
+
+        # chuyên biệt
+        if isinstance(s, UndergraduateStudent):
+            if fee_per_credit is not None:
+                s.fee_per_credit = float(fee_per_credit)
+            if activity_fee is not None:
+                s.activity_fee = float(activity_fee)
+            if credits is not None:
+                s.credits = int(credits)
+        elif isinstance(s, GraduateStudent):
+            if fee_per_credit is not None:
+                s.fee_per_credit = float(fee_per_credit)
+            if research_fee is not None:
+                s.research_fee = float(research_fee)
+            if credits is not None:
+                s.credits = int(credits)
+            if scholarship_rate is not None:
+                s.scholarship_rate = float(scholarship_rate)
+
+        return s
 
     # CSV persistence
     def save_csv(self, file_path: str) -> int:

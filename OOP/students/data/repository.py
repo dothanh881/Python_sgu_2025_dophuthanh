@@ -4,7 +4,7 @@ from typing import Dict, List, Optional
 import csv
 
 from ..models import Student
-from ..models import UndergraduateStudent, GraduateStudent, ExchangeStudent
+from ..models import UndergraduateStudent, GraduateStudent
 
 
 class StudentRepository:
@@ -50,7 +50,6 @@ class StudentRepository:
             "credits",
             "research_fee",
             "scholarship_rate",
-            "program_fee",
         ]
 
         rows: List[Dict[str, str]] = []
@@ -66,7 +65,6 @@ class StudentRepository:
                 "credits": "",
                 "research_fee": "",
                 "scholarship_rate": "",
-                "program_fee": "",
             }
             if isinstance(s, UndergraduateStudent):
                 base["role"] = "Undergraduate"
@@ -79,9 +77,6 @@ class StudentRepository:
                 base["research_fee"] = f"{s.research_fee}"
                 base["credits"] = f"{s.credits}"
                 base["scholarship_rate"] = f"{s.scholarship_rate}"
-            elif isinstance(s, ExchangeStudent):
-                base["role"] = "Exchange"
-                base["program_fee"] = f"{s.program_fee}"
             else:
                 base["role"] = s.__class__.__name__
 
@@ -151,14 +146,6 @@ class StudentRepository:
                             research_fee=parse_float(row.get("research_fee")),
                             credits=parse_int(row.get("credits")),
                             scholarship_rate=parse_float(row.get("scholarship_rate")),
-                        )
-                    elif role == "Exchange":
-                        s = ExchangeStudent(
-                            student_id=student_id,
-                            full_name=full_name,
-                            major=major,
-                            gpa=gpa,
-                            program_fee=parse_float(row.get("program_fee")),
                         )
                     else:
                         # Không rõ role -> bỏ qua.

@@ -3,28 +3,20 @@ from __future__ import annotations
 import sys
 
 import os
-import csv
 from .data.repository import StudentRepository
 from .services.student_service import StudentService
 
 
 def print_menu() -> None:
-    print("\n=== Quản lý Sinh viên (3 lớp) ===")
+    print("\n=== Quản lý Sinh viên ===")
     print("1) Thêm SV đại học")
     print("2) Thêm SV cao học")
-    print("3) Thêm SV trao đổi")
-    print("4) Liệt kê tất cả")
-    print("5) Tìm theo chuyên ngành (major)")
-    print("6) Ghi danh thêm tín chỉ")
-    print("7) Cập nhật GPA")
-    print("8) Tính học phí SV")
-    print("9) Tổng học phí tất cả")
-    print("10) Xoá SV theo ID")
-    print("11) Lưu danh sách ra CSV")
-    print("12) Đọc danh sách từ CSV")
-    print("13) Nạp dataset mẫu")
-    print("14) Hiển thị danh sách hiện tại dạng bảng")
-    print("15) Hiển thị CSV bất kỳ dạng bảng")
+    print("3) Liệt kê tất cả ")
+    print("4) Tìm theo chuyên ngành ")
+    print("5) Sửa thông tin SV")
+    print("6) Xoá SV theo ID")
+    print("7) Lưu danh sách ra CSV")
+    print("8) Đọc danh sách từ CSV")
     print("0) Thoát")
 
 
@@ -32,38 +24,33 @@ def main() -> None:
     repo = StudentRepository()
     service = StudentService(repo)
 
-    actions = {
-        "1": lambda: add_undergrad(service),
-        "2": lambda: add_grad(service),
-        "3": lambda: add_exchange(service),
-        "4": lambda: list_all(service),
-        "5": lambda: list_by_major(service),
-        "6": lambda: enroll_credits(service),
-        "7": lambda: update_gpa(service),
-        "8": lambda: compute_tuition(service),
-        "9": lambda: compute_total_tuition(service),
-        "10": lambda: remove_student(service),
-        "11": lambda: save_csv(service),
-        "12": lambda: load_csv(service),
-        "13": lambda: load_sample(service),
-        "14": lambda: show_table_current(service),
-        "15": lambda: show_csv_table(),
-    }
-
     while True:
         print_menu()
         choice = input("Chọn chức năng: ").strip()
-        if choice == "0":
-            print("Tạm biệt!")
-            break
-        action = actions.get(choice)
-        if action:
-            try:
-                action()
-            except Exception as e:
-                print(f"Lỗi: {e}")
-        else:
-            print("Lựa chọn không hợp lệ.")
+        try:
+            if choice == "0":
+                print("Tạm biệt!")
+                break
+            elif choice == "1":
+                add_undergrad(service)
+            elif choice == "2":
+                add_grad(service)
+            elif choice == "3":
+                show_table_current(service)
+            elif choice == "4":
+                show_table_by_major(service)
+            elif choice == "5":
+                edit_student(service)
+            elif choice == "6":
+                remove_student(service)
+            elif choice == "7":
+                save_csv(service)
+            elif choice == "8":
+                load_csv(service)
+            else:
+                print("Lựa chọn không hợp lệ.")
+        except Exception as e:
+            print(f"Lỗi: {e}")
 
 
 def add_undergrad(service: StudentService) -> None:
@@ -89,13 +76,7 @@ def add_grad(service: StudentService) -> None:
     print("Đã thêm:", s)
 
 
-def add_exchange(service: StudentService) -> None:
-    sid = input("ID: ").strip()
-    name = input("Họ tên: ").strip()
-    major = input("Chuyên ngành: ").strip()
-    program_fee = float(input("Học phí chương trình (mặc định 5000000): ") or 5000000)
-    s = service.register_exchange(sid, name, major, program_fee)
-    print("Đã thêm:", s)
+# Lược bỏ thêm SV trao đổi để đơn giản hoá.
 
 
 def list_all(service: StudentService) -> None:
@@ -103,21 +84,64 @@ def list_all(service: StudentService) -> None:
         print(s)
 
 
-def list_by_major(service: StudentService) -> None:
+def show_table_by_major(service: StudentService) -> None:
     major = input("Major: ").strip()
     results = service.list_by_major(major)
     if not results:
         print("Không có sinh viên thuộc major này.")
-    else:
-        for s in results:
-            print(s)
+        return
+    # In bảng riêng cho kết quả lọc
+    headers = [
+        "ID",
+        "Họ tên",
+        "Major",
+        "GPA",
+        "Loại",
+        "Credits",
+        "Fee/Credit",
+        "ActivityFee",
+        "ResearchFee",
+        "Scholarship",
+        "Tuition",
+    ]
+    def fmt_money(x):
+        try:
+            return f"{float(x):,.0f}"
+        except Exception:
+            return ""
+    rows = []
+    for s in results:
+        role = "Undergraduate" if s.__class__.__name__ == "UndergraduateStudent" else "Graduate"
+        rows.append([
+            s.id,
+            s.full_name,
+            s.major,
+            f"{s.gpa:.2f}",
+            role,
+            str(getattr(s, "credits", "")),
+            fmt_money(getattr(s, "fee_per_credit", "")),
+            fmt_money(getattr(s, "activity_fee", "")),
+            fmt_money(getattr(s, "research_fee", "")),
+            (
+                f"{getattr(s, 'scholarship_rate', ''):.2f}"
+                if hasattr(s, "scholarship_rate")
+                else ""
+            ),
+            fmt_money(s.calculate_tuition()),
+        ])
+    widths = [len(h) for h in headers]
+    for row in rows:
+        for i, cell in enumerate(row):
+            widths[i] = max(widths[i], len(str(cell)))
+    def print_row(cells):
+        print(" | ".join(str(cells[i]).ljust(widths[i]) for i in range(len(headers))))
+    print_row(headers)
+    print("-" * (sum(widths) + 3 * (len(headers) - 1)))
+    for row in rows:
+        print_row(row)
 
 
-def enroll_credits(service: StudentService) -> None:
-    sid = input("ID: ").strip()
-    more = int(input("Thêm tín chỉ: ") or 0)
-    service.enroll_credits(sid, more)
-    print("Đã ghi danh tín chỉ.")
+# Lược bỏ ghi danh tín chỉ để đơn giản.
 
 
 def update_gpa(service: StudentService) -> None:
@@ -127,21 +151,62 @@ def update_gpa(service: StudentService) -> None:
     print("Đã cập nhật GPA.")
 
 
-def compute_tuition(service: StudentService) -> None:
-    sid = input("ID: ").strip()
-    fee = service.compute_tuition(sid)
-    print(f"Học phí: {fee:,.0f}")
+# Có thể tính học phí từng SV khi hiển thị bảng, lược bỏ menu riêng.
 
 
-def compute_total_tuition(service: StudentService) -> None:
-    total = service.compute_total_tuition()
-    print(f"Tổng học phí tất cả: {total:,.0f}")
+# Lược bỏ tổng học phí.
 
 
 def remove_student(service: StudentService) -> None:
     sid = input("ID: ").strip()
     ok = service.remove(sid)
     print("Đã xoá." if ok else "Không tìm thấy.")
+
+def edit_student(service: StudentService) -> None:
+    sid = input("ID cần sửa: ").strip()
+    s = service._repo.get(sid)
+    if s is None:
+        print("Không tìm thấy.")
+        return
+    print(f"Đang sửa: {s}")
+    # chung
+    name = input(f"Họ tên ({s.full_name}): ").strip() or s.full_name
+    major = input(f"Chuyên ngành ({s.major}): ").strip() or s.major
+    gpa_in = input(f"GPA ({s.gpa:.2f}) [0-4]: ").strip()
+    gpa = float(gpa_in) if gpa_in != "" else s.gpa
+
+    # chuyên biệt
+    fee_per_credit = activity_fee = credits = None
+    research_fee = scholarship_rate = None
+    if s.__class__.__name__ == "UndergraduateStudent":
+        fee_per_credit_in = input(f"Phí/tín chỉ ({s.fee_per_credit}): ").strip()
+        activity_fee_in = input(f"Phí hoạt động ({s.activity_fee}): ").strip()
+        credits_in = input(f"Tín chỉ ({s.credits}): ").strip()
+        fee_per_credit = float(fee_per_credit_in) if fee_per_credit_in != "" else s.fee_per_credit
+        activity_fee = float(activity_fee_in) if activity_fee_in != "" else s.activity_fee
+        credits = int(credits_in) if credits_in != "" else s.credits
+    else:
+        fee_per_credit_in = input(f"Phí/tín chỉ ({getattr(s,'fee_per_credit','')}): ").strip()
+        research_fee_in = input(f"Phí nghiên cứu ({getattr(s,'research_fee','')}): ").strip()
+        credits_in = input(f"Tín chỉ ({getattr(s,'credits','')}): ").strip()
+        scholarship_in = input(f"Học bổng [0-1] ({getattr(s,'scholarship_rate','')}): ").strip()
+        fee_per_credit = float(fee_per_credit_in) if fee_per_credit_in != "" else getattr(s,'fee_per_credit','')
+        research_fee = float(research_fee_in) if research_fee_in != "" else getattr(s,'research_fee','')
+        credits = int(credits_in) if credits_in != "" else getattr(s,'credits','')
+        scholarship_rate = float(scholarship_in) if scholarship_in != "" else getattr(s,'scholarship_rate','')
+
+    updated = service.edit_student(
+        student_id=sid,
+        full_name=name,
+        major=major,
+        gpa=gpa,
+        fee_per_credit=fee_per_credit,
+        activity_fee=activity_fee,
+        credits=credits,
+        research_fee=research_fee,
+        scholarship_rate=scholarship_rate,
+    )
+    print("Đã cập nhật:", updated)
 
 
 def save_csv(service: StudentService) -> None:
@@ -162,12 +227,6 @@ def load_csv(service: StudentService) -> None:
     print(f"Đã nạp {count} sinh viên từ '{path}' với chế độ {mode}.")
 
 
-def load_sample(service: StudentService) -> None:
-    path = os.path.join("OOP", "students", "datasets", "students_sample.csv")
-    count = service.load_csv(path, mode="replace")
-    print(f"Đã nạp dataset mẫu: {count} sinh viên từ '{path}'.")
-
-
 def show_table_current(service: StudentService) -> None:
     students = service.list_all()
     if not students:
@@ -185,7 +244,6 @@ def show_table_current(service: StudentService) -> None:
         "ActivityFee",
         "ResearchFee",
         "Scholarship",
-        "ProgramFee",
         "Tuition",
     ]
 
@@ -195,8 +253,6 @@ def show_table_current(service: StudentService) -> None:
             role = "Undergraduate"
         elif s.__class__.__name__ == "GraduateStudent":
             role = "Graduate"
-        elif s.__class__.__name__ == "ExchangeStudent":
-            role = "Exchange"
         else:
             role = s.__class__.__name__
 
@@ -221,7 +277,6 @@ def show_table_current(service: StudentService) -> None:
                 if hasattr(s, "scholarship_rate")
                 else ""
             ),
-            fmt_money(getattr(s, "program_fee", "")),
             fmt_money(s.calculate_tuition()),
         ])
 
@@ -239,34 +294,7 @@ def show_table_current(service: StudentService) -> None:
         print_row(row)
 
 
-def show_csv_table() -> None:
-    default_path = os.path.join("OOP", "students", "datasets", "students_sample.csv")
-    path = input(f"Đường dẫn CSV để hiển thị (mặc định {default_path}): ") or default_path
-    if not os.path.exists(path):
-        print(f"Không tìm thấy file: {path}")
-        return
-
-    with open(path, mode="r", newline="", encoding="utf-8-sig") as f:
-        reader = csv.DictReader(f)
-        headers = reader.fieldnames or []
-        rows = [row for row in reader]
-
-    if not headers or not rows:
-        print("File CSV rỗng hoặc không có header.")
-        return
-
-    widths = [len(h) for h in headers]
-    for row in rows:
-        for i, h in enumerate(headers):
-            widths[i] = max(widths[i], len(str(row.get(h, ""))))
-
-    def print_row_dict(row_dict):
-        print(" | ".join(str(row_dict.get(h, "")).ljust(widths[i]) for i, h in enumerate(headers)))
-
-    print(" | ".join(h.ljust(widths[i]) for i, h in enumerate(headers)))
-    print("-" * (sum(widths) + 3 * (len(headers) - 1)))
-    for row in rows:
-        print_row_dict(row)
+# Lược bỏ hiển thị CSV bất kỳ để đơn giản hoá.
 
 
 if __name__ == "__main__":
